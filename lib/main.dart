@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:pdfx/pdfx.dart';
 
 void main() {
   runApp(MyApp());
@@ -17,16 +18,26 @@ class MyApp extends StatelessWidget {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'pdf', 'doc'],
+        allowedExtensions: ['pdf'],
       );
 
       if (result != null) {
         List<File> files = result.paths.map((path) => File(path!)).toList();
 
         for (var file in files) {
-          // get bytes
-          Uint8List bytes = await file.readAsBytes();
-          debugPrint('File: ${file.path}, Size: ${bytes.length} bytes');
+          final doc = await PdfDocument.openFile(file.path);
+          final page = await doc.getPage(1);
+          final PdfPageImage? pageImage = await page.render(
+            width: 1080,
+            height: 1920,
+            format: PdfPageImageFormat.png,
+          );
+
+          final Uint8List pageBytes = pageImage!.bytes;
+
+          debugPrint(
+            'First page of ${file.path} rendered, bytes: ${pageBytes.length}',
+          );
         }
       } else {
         debugPrint('No files selected');
