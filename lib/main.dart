@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         List<File> files = result.paths.map((path) => File(path!)).toList();
 
         for (var file in files) {
-          final doc = await PdfDocument.openFile(file.path);
+          final PdfDocument doc = await PdfDocument.openFile(file.path);
           final page = await doc.getPage(1);
           final PdfPageImage? pageImage = await page.render(
             width: 1080,
@@ -35,9 +35,7 @@ class MyApp extends StatelessWidget {
 
           final Uint8List pageBytes = pageImage!.bytes;
 
-          debugPrint(
-            'First page of ${file.path} rendered, bytes: ${pageBytes.length}',
-          );
+          debugPrint('path: ${file.path} bytes: ${pageBytes.length}');
         }
       } else {
         debugPrint('No files selected');
