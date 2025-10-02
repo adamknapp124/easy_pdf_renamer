@@ -14,16 +14,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // file picker
     void pickFiles() async {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.custom,
+        // limited files to pdfs
         allowedExtensions: ['pdf'],
       );
 
       if (result != null) {
         List<File> files = result.paths.map((path) => File(path!)).toList();
 
+        // for each file...
         for (var file in files) {
           final PdfDocument doc = await PdfDocument.openFile(file.path);
           final page = await doc.getPage(1);
@@ -33,9 +36,12 @@ class MyApp extends StatelessWidget {
             format: PdfPageImageFormat.png,
           );
 
+          // get image bytes from png
           final Uint8List pageBytes = pageImage!.bytes;
 
           debugPrint('path: ${file.path} bytes: ${pageBytes.length}');
+
+          // *** todo: use OCR to extract text from image bytes ***
         }
       } else {
         debugPrint('No files selected');
