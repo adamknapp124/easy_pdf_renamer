@@ -12,6 +12,20 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  Future<String> tesseractUnlimitedPower(File imageFile) async {
+    try {
+      final result = await Process.run('tesseract', [imageFile.path, 'stdout']);
+
+      if (result.exitCode == 0) {
+        return result.stdout.toString();
+      } else {
+        return 'Tesseract error: ${result.stderr}';
+      }
+    } catch (e) {
+      return ('Tesseract failed: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // file picker
@@ -39,7 +53,39 @@ class MyApp extends StatelessWidget {
           // get image bytes from png
           final Uint8List pageBytes = pageImage!.bytes;
 
-          debugPrint('path: ${file.path} bytes: ${pageBytes.length}');
+          // create temp file that gets overwritten on each iteration
+          final tempDir = Directory.systemTemp;
+          final tempImageFile = File('${tempDir.path}/temp_image.png');
+          await tempImageFile.writeAsBytes(pageBytes);
+
+          // run tesseract on temp image file
+          String text = await tesseractUnlimitedPower(tempImageFile);
+
+          // create target string to find order number then get the index
+          String target = 'Order# ';
+          final index = text.indexOf(target);
+
+          if (index != -1 && index + target.length + 8 <= text.length) {
+            final extractedOrderNumber = text.substring(
+              index + target.length,
+              index + target.length + 8,
+            );
+            debugPrint('Extracted Order Number: $extractedOrderNumber');
+
+            final dir = file.parent.path;
+            final newPath = "$dir/Packlist_$extractedOrderNumber.pdf";
+            debugPrint('Renaming ${file.path} to $newPath');
+
+            final renamedFile = await file.rename(newPath);
+            debugPrint('Renamed file path: ${renamedFile.path}');
+          } else {
+            debugPrint('Order number not found in the text.');
+          }
+
+          await page.close();
+          await doc.close();
+
+          // debugPrint('path: ${file.path} bytes: ${pageBytes.length}');
 
           // *** todo: use OCR to extract text from image bytes ***
         }
