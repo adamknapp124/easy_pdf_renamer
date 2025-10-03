@@ -12,7 +12,8 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  Future<String> tesseractUnlimitedPower(File imageFile) async {
+  // Runs
+  Future<String> _tesseractUnlimitedPower(File imageFile) async {
     try {
       final result = await Process.run('tesseract', [imageFile.path, 'stdout']);
 
@@ -37,6 +38,7 @@ class MyApp extends StatelessWidget {
         allowedExtensions: ['pdf'],
       );
 
+      // if user selected files
       if (result != null) {
         List<File> files = result.paths.map((path) => File(path!)).toList();
 
@@ -49,8 +51,6 @@ class MyApp extends StatelessWidget {
             height: 1920,
             format: PdfPageImageFormat.png,
           );
-
-          // get image bytes from png
           final Uint8List pageBytes = pageImage!.bytes;
 
           // create temp file that gets overwritten on each iteration
@@ -58,36 +58,31 @@ class MyApp extends StatelessWidget {
           final tempImageFile = File('${tempDir.path}/temp_image.png');
           await tempImageFile.writeAsBytes(pageBytes);
 
-          // run tesseract on temp image file
-          String text = await tesseractUnlimitedPower(tempImageFile);
+          // call tesseract on the image
+          String text = await _tesseractUnlimitedPower(tempImageFile);
 
           // create target string to find order number then get the index
           String target = 'Order# ';
           final index = text.indexOf(target);
 
+          // if found, extract the 8 characters after the target string
           if (index != -1 && index + target.length + 8 <= text.length) {
             final extractedOrderNumber = text.substring(
               index + target.length,
               index + target.length + 8,
             );
-            debugPrint('Extracted Order Number: $extractedOrderNumber');
 
+            // rename the file
             final dir = file.parent.path;
             final newPath = "$dir/Packlist_$extractedOrderNumber.pdf";
-            debugPrint('Renaming ${file.path} to $newPath');
-
             final renamedFile = await file.rename(newPath);
-            debugPrint('Renamed file path: ${renamedFile.path}');
+            debugPrint('Renamed to: ${renamedFile.path}');
           } else {
             debugPrint('Order number not found in the text.');
           }
 
           await page.close();
           await doc.close();
-
-          // debugPrint('path: ${file.path} bytes: ${pageBytes.length}');
-
-          // *** todo: use OCR to extract text from image bytes ***
         }
       } else {
         debugPrint('No files selected');
